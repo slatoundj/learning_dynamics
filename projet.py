@@ -146,21 +146,91 @@ def gradient_of_selection(configuration, mu:float, beta:float, h:float, r:float)
     return nabla_i
 
 
-def find_stationnary_distribution():
-    matrix = np.zeros((Zr-1, Zp-1))
-    sum = np.zeros(2)
-    for ip in range(1, Zp):
-        for ir in range(1, Zr):
+def find_stationnary_distribution(mu, beta, h, r):
+    matrix = []
+    #matrix_ip_i = []
+    sum = 0
+    for ip in range(2, Zp-1):
+        matrix.append([])
+        #matrix_ip_i.append([])
+        for ir in range(2, Zr-1):
+            
+            # i = {ir, ip} 
+            # T_ii' = Tir_pos + Tir_neg + Tip_pos + Tip_neg
+            
+            # T_i'i = Tir_pos(ir-1, ip) + Tir_neg(ir+1, ip) + Tip_pos(ir, ip-1) + Tip_neg(ir, ip+1)
+            Tir_pos = proba((ir-1, Zr-ir+1, ip, Zp-ip), {"strategy": "Defect", "w_class": "Rich"}, mu, beta, h, r)
+            Tir_neg = proba((ir+1, Zr-ir-1, ip, Zp-ip), {"strategy": "Cooperate", "w_class": "Rich"}, mu, beta, h, r)
+            Tip_pos = proba((ir, Zr-ir, ip+1, Zp-ip-1), {"strategy": "Defect", "w_class": "Poor"}, mu, beta, h, r)
+            Tip_neg = proba((ir, Zr-ir, ip-1, Zp-ip+1), {"strategy": "Cooperate", "w_class": "Poor"}, mu, beta, h, r)
+            """
             configuration = (ir, Zr-ir, ip, Zp-ip)
             Tir_pos = proba(configuration, {"strategy": "Defect", "w_class": "Rich"}, mu, beta, h, r)       # probability that a rich defector becomes a rich cooperator
             Tir_neg = proba(configuration, {"strategy": "Cooperate", "w_class": "Rich"}, mu, beta, h, r)    # probability that a rich cooperator becomes a rich defector
             Tip_pos = proba(configuration, {"strategy": "Defect", "w_class": "Poor"}, mu, beta, h, r)       # probability that a poor defector becomes a poor cooperator
             Tip_neg = proba(configuration, {"strategy": "Cooperate", "w_class": "Poor"}, mu, beta, h, r)    # probability that a poor cooperator becomes a poor defector
-            matrix[ir, ip] = [1 - abs(Tir_pos - Tir_neg), 1 - (Tip_pos - Tip_neg)]
+            """
+            T_i_prime_i = Tir_pos + Tir_neg + Tip_pos + Tip_neg
+            matrix[ip-2].append(T_i_prime_i)
+            #matrix_ip_i[ip-1].append(Tir_pos + Tip_pos)
+            sum += T_i_prime_i
             #pi = 1 - abs(Tir_pos - Tir_neg)
-            
     
-            
+    m = np.array(matrix)
+    m = m/sum
+    print(sum)
+    return m
+    
+"""
+p = V(i)
+q = V(i')
+
+i = V^-1(p)
+i' = V^-1(q)
+
+W_qp = T_ii'
+
+le vecteur propre de W_qp associé à la valeur propre lambda = 1 donne ...
+
+
+"""
+    
+    
+    
+    
+"""    
+ 1 - (Tir_pos + Tir_neg + Tip_pos + Tip_neg) proportionel à pi
+ 
+ 
+ /((Zp-2) * (Zr-2)) 
+ 
+"""
+    
+m = find_stationnary_distribution(1/Z, 3, 0.0, 0.2)
+
+plt.matshow(m)
+
+"""
+#Define a colormap for the plot
+cmap = plt.cm.get_cmap('gray')
+
+#Normalize the values in the matrix to map to colors
+norm = plt.Normalize(m.min(), m.max())
+
+#Create a scatter plot
+fig, ax = plt.subplots()
+for i in range(m.shape[0]):
+    for j in range(m.shape[1]):
+        color = cmap(norm(m[i, j]))
+        ax.scatter(j, i, c=color, s=2)  # j and i are reversed to match matrix indexing
+
+#Set the aspect ratio to make sure dots are square
+ax.set_aspect('equal')
+
+#Show the plot
+plt.show()
+"""
+
 
 
 def nabla_for_each_i(mu:float, beta:float, h:float, r:float):
@@ -187,7 +257,6 @@ dy = np.array(nabla_p)
 plt.figure("gradient selection")
 plt.quiver(dx, dy)
 plt.show()
-
 
 
 def markov_step(state, beta, mu, Z, h, r):
