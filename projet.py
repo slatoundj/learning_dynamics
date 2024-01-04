@@ -207,8 +207,7 @@ le vecteur propre de W_qp associé à la valeur propre lambda = 1 donne ...
 """
     
 m = find_stationnary_distribution(1/Z, 3, 0.0, 0.2)
-
-plt.matshow(m)
+plt.matshow(mat)
 
 """
 #Define a colormap for the plot
