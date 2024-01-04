@@ -146,6 +146,23 @@ def gradient_of_selection(configuration, mu:float, beta:float, h:float, r:float)
     return nabla_i
 
 
+def find_stationnary_distribution():
+    matrix = np.zeros((Zr-1, Zp-1))
+    sum = np.zeros(2)
+    for ip in range(1, Zp):
+        for ir in range(1, Zr):
+            configuration = (ir, Zr-ir, ip, Zp-ip)
+            Tir_pos = proba(configuration, {"strategy": "Defect", "w_class": "Rich"}, mu, beta, h, r)       # probability that a rich defector becomes a rich cooperator
+            Tir_neg = proba(configuration, {"strategy": "Cooperate", "w_class": "Rich"}, mu, beta, h, r)    # probability that a rich cooperator becomes a rich defector
+            Tip_pos = proba(configuration, {"strategy": "Defect", "w_class": "Poor"}, mu, beta, h, r)       # probability that a poor defector becomes a poor cooperator
+            Tip_neg = proba(configuration, {"strategy": "Cooperate", "w_class": "Poor"}, mu, beta, h, r)    # probability that a poor cooperator becomes a poor defector
+            matrix[ir, ip] = [1 - abs(Tir_pos - Tir_neg), 1 - (Tip_pos - Tip_neg)]
+            #pi = 1 - abs(Tir_pos - Tir_neg)
+            
+    
+            
+
+
 def nabla_for_each_i(mu:float, beta:float, h:float, r:float):
     nabla_r = []
     nabla_p = []
@@ -170,3 +187,78 @@ dy = np.array(nabla_p)
 plt.figure("gradient selection")
 plt.quiver(dx, dy)
 plt.show()
+
+
+
+def markov_step(state, beta, mu, Z, h, r):
+    ir, ip = state
+    fitness_strats = {}
+    for w_class in w_classes:
+        fitness_strats[w_class] = {}
+        for strat in strategies:
+            fitness_strats[w_class][strat] = fitness(state, strat, w_class, r)
+            print(fitness_strats[w_class][strat])
+            
+markov_step((10,100), beta=3, mu=1/Z, Z=Z, h=0.0, r=0.4)
+
+"""
+sum sur i' Tii' pi - Ti'i pi = 0
+
+pi * (Tii' - Ti'i) = 0
+pi = pi' = pi
+
+
+(A - lambda I)^k v = 0
+
+lambda = 1
+
+(A-I)^k v = 0
+
+
+"""
+def compute_pi():
+    for ip in range(1, Zp):
+        for ir in range(i, Zr):
+            matrix = np.zeros((2,2))
+            for i, w_class in enumerate(w_classes):
+                for j, strat in enumerate(strategies):
+                    matrix[i, j] = proba((ir, Zr-ir, ip, Zp-ip), {"strategy": strat, "w_class": w_class}, mu, beta, h, r)
+
+
+
+def estimate_stationary_distribution(nb_runs, transitory, nb_generations, beta, mu, Z, h, r):
+    """estimate the stationary distribution
+    """
+    stationary_distribution = np.array([0.0 for i in range(Z+1)]) # For 2 strategies, there are Z+1 possible states
+    
+    state_counter_all_runs = []
+    
+    for i in range(nb_runs):
+        # random initialisation
+        strategy_0 = np.random.randint(0, Z+1) # number of Always Cheat strategies
+        strategy_1 = Z-strategy_0 # number of Copycat strategies
+        state = [strategy_0, strategy_1]
+        
+        # transitory
+        for t in range(transitory):
+            state = markov_step(state, beta, mu, Z, h, r)
+            
+        state_counter = [0 for i in range(Z+1)] # For 2 strategies, there are Z+1 possible states
+        for g in range(nb_generations-transitory):
+            state = markov_step(state, beta, mu, Z, h, r)
+            state_counter[state[0]] += 1
+        state_counter_all_runs.append(state_counter)
+        
+    # Average over all runs
+    sum = 0
+    for j in range(len(state_counter_all_runs[0])):
+        avg = 0
+        for k in range(nb_runs):
+            avg += state_counter_all_runs[k][j]
+        avg /= nb_runs
+        sum += avg
+        stationary_distribution[j] = avg
+    
+    stationary_distribution /= sum
+
+    return stationary_distribution
