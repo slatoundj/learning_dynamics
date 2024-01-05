@@ -1,10 +1,14 @@
-#from numba import jit
-from math import (floor, exp, comb)
+import torch
+from math import (floor, exp, comb, factorial)
 import numpy as np
 from matplotlib import pyplot as plt
 import time
 
-start = time.time()
+import os
+os.environ["HSA_OVERRIDE_GFX_VERSION"] = "10.3.0" # For amd gpu with rocm
+
+device = (torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+print(device)
 
 Zr = 40
 Zp = 160
@@ -13,11 +17,11 @@ Z = Zr + Zp
 h = 0       # homophily
 
 # initial endowment
-br = 2.5    
+br = 2.5  
 bp = 0.625
 
 # average endowment
-avg_b = 0.2*br + 0.8*0.625
+avg_b = 0.2*br + 0.8*bp
 
 # cooperation cost
 c = 0.1
@@ -37,6 +41,43 @@ beta = 3    # intensity of selection
 r = 0.2     # risk perception
 
 numStates = (Zr+1) * (Zp+1)
+
+facto = [1 for _ in range(Z+1)]
+
+def my_comb(n, k):
+    if k <= n:
+        # num = math.factorial(n)
+        if n == 1:
+            num = 1
+        else:
+            if facto[n] != 1:
+                num = facto[n]
+            else:
+                num = factorial(n)
+                facto[n] = num
+        # den_1 = math.factorial(k)
+        if k == 1:
+            den_1 = 1
+        else:
+            if facto[k] != 1:
+                den_1 = facto[k]
+            else:
+                den_1 = factorial(k)
+                facto[k] = den_1
+        # den_2 = math.factorial(n - k)
+        if n - k == 1:
+            den_2 = 1
+        else:
+            if facto[n - k] != 1:
+                den_2 = facto[n - k]
+            else:
+                den_2 = factorial(n - k)
+                facto[n - k] = den_2
+
+        result = num // (den_1 * den_2)
+        return result
+    else:
+        return 0
 
 
 def heaviside(x):
@@ -220,12 +261,6 @@ def proba(configuration, selected_individual, mu:float, beta:float, h:float, r:f
             fr_C = fitness([ir_C, ip_C], "Cooperate", "Rich", r)
             Tp_DC = (ip_D/Z) * ( (1-mu) * (ip_C/(Zp-1+(1-h)*Zr) * fermi(beta, fp_D, fp_C) +  ((1-h)*ir_C)/(Zp-1+(1-h)*Zr) * fermi(beta, fp_D, fr_C)) + mu )
             return Tp_DC
-    
-
-"""
-0 à 40 coopérateurs riches
-0 à 160 coopérateurs pauvres
-"""
 
 
 def V(i_config):
@@ -241,20 +276,13 @@ def rec_V(x):
         ir = x - ip * Zr - ip
     return (ir, ip)   
 
-"""
-W p - lambda I p = 0
-(W - lambda I) p = 0
-"""
 
-"""
-P t - lambda I t = 0
-(P - lambda I) t = 0
-"""
-
-#@jit(nopython=True)
-def null(a, rtol=1e-8):
-    u, s, v = np.linalg.svd(a)
-    rank = (s > rtol*s[0]).sum()
+def null(a, rtol=1e-4):
+    A = torch.Tensor(a).to(device)
+    U, S, Vh = torch.linalg.svd(A)
+    v_cpu = Vh.cpu()
+    v = v_cpu.numpy()
+    rank = (S > rtol*S[0]).sum()
     return rank, v[rank:].T.copy()
 
 
@@ -343,11 +371,11 @@ def compute_stationary_distribution(mu, beta, h, r):
 
 def aG(i):
     (ir, ip) = i
-    ag_i = gr_achievement_over_pop((ir, ip), "Cooperate", "Rich")
-    ag_i += gr_achievement_over_pop((ir, ip), "Defect", "Rich")
-    ag_i += gr_achievement_over_pop((ir, ip), "Cooperate", "Poor")
-    ag_i += gr_achievement_over_pop((ir, ip), "Defect", "Poor")
-    return ag_i/4
+    ag_i = ir * gr_achievement_over_pop((ir, ip), "Cooperate", "Rich")
+    ag_i += (Zr - ir) * gr_achievement_over_pop((ir, ip), "Defect", "Rich")
+    ag_i += ip * gr_achievement_over_pop((ir, ip), "Cooperate", "Poor")
+    ag_i += (Zp - ip) * gr_achievement_over_pop((ir, ip), "Defect", "Poor")
+    return ag_i/Z
 
 
 #print(aG((40,160)))
@@ -364,7 +392,7 @@ def eta_g(stationary_distribution, r):
 
 
 def compute_group_achivement_in_function_of_r(mu, beta, h):
-    risk = [r/5 for r in range(6)]
+    risk = [r/100 for r in range(101)]
     eta_G = []
     for r in risk:
         print("\r risk =", r, end=" ", flush=True)
@@ -374,12 +402,16 @@ def compute_group_achivement_in_function_of_r(mu, beta, h):
     return risk, eta_G
 
 
+start = time.time()
 risk, eta_G = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0)
+end = time.time()
+print("elapsed time gpu =", end-start, "seconds")
+
+risk2, eta_G2 = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=1.0)
 
 plt.figure("Group achievement in function of risk")
-plt.plot(risk, eta_G)
+plt.plot(risk, eta_G, "b")
+plt.plot(risk2, eta_G2, "r")
+plt.xlim(0,1)
+plt.ylim(0,1)
 plt.show()
-
-
-end = time.time()
-print("elapsed time =", end-start, "seconds")
