@@ -1,8 +1,8 @@
+#from numba import jit
 from math import (floor, exp, comb)
 import numpy as np
 from matplotlib import pyplot as plt
 import time
-import scipy as sc
 
 start = time.time()
 
@@ -36,7 +36,7 @@ beta = 3    # intensity of selection
 
 r = 0.2     # risk perception
 
-numStates = 6601
+numStates = (Zr+1) * (Zp+1)
 
 
 def heaviside(x):
@@ -51,8 +51,8 @@ def payoffs(j_config, strategy, w_class, r):
     
     delta = cr*jr + cp*jp - threshold
     
-    pi_D_r = br * heaviside(delta) + (1-r) * (1 - heaviside(delta))
-    pi_D_p = bp * heaviside(delta) + (1-r) * (1 - heaviside(delta))
+    pi_D_r = br * (heaviside(delta) + (1-r) * (1 - heaviside(delta)))
+    pi_D_p = bp * (heaviside(delta) + (1-r) * (1 - heaviside(delta)))
     
     pi_C_r = pi_D_r - cr
     pi_C_p = pi_D_p - cp
@@ -67,6 +67,54 @@ def payoffs(j_config, strategy, w_class, r):
             return pi_C_r
         else:
             return pi_C_p
+
+
+def gr_achievement(j_config):
+    (jr, jp) = j_config
+    delta = cr*jr + cp*jp - threshold
+    return heaviside(delta)
+
+
+def gr_achievement_over_pop(i_config, strategy, w_class):
+    (ir, ip) = i_config
+    
+    if ir == Zr and ip == Zp:
+        return 1
+    
+    n = []
+    
+    if strategy == "Defect":
+        # Defectors
+        for jr in range(N-1):
+            for jp in range(N-1-jr):
+                for i in range(comb(ir, jr)*comb(ip, jp) * comb(Z-1-ir-ip, N-1-jr-jp)):
+                    n.append(gr_achievement((jr, jp)))
+        if len(n) == 0:
+            return 0
+        return sum(n)/len(n)
+    else:
+        if w_class == "Rich":
+            # Rich cooperator
+            if ir == 0:
+                return 0    # If there is no rich cooperator in the population, their fitness is 0 (unknown)
+            for jr in range(N-1):
+                for jp in range(N-1-jr):
+                    for i in range(comb(ir-1, jr)*comb(ip, jp) * comb(Z-ir-ip, N-1-jr-jp)):
+                        n.append(gr_achievement((jr+1, jp)))
+            if len(n) == 0:
+                return 0
+            return sum(n)/len(n)
+        else:
+            # Poor cooperator
+            if ip == 0:
+                return 0    # If there is no poor cooperator in the population, their fitness is 0 (unknown)
+            for jr in range(N-1):
+                for jp in range(N-1-jr):
+                    for i in range(comb(ir, jr)*comb(ip-1, jp) * comb(Z-ir-ip, N-1-jr-jp)):
+                        n.append(gr_achievement((jr, jp+1)))
+            if len(n) == 0:
+                return 0
+            return sum(n)/len(n)
 
 
 def fitness(i_config, strategy, w_class, r):
@@ -199,6 +247,7 @@ P t - lambda I t = 0
 (P - lambda I) t = 0
 """
 
+#@jit(nopython=True)
 def null(a, rtol=1e-8):
     u, s, v = np.linalg.svd(a)
     rank = (s > rtol*s[0]).sum()
@@ -236,7 +285,7 @@ def transition_matrix(mu, beta, h, r):
     return w_matrix
         
 """
-P = transition_matrix(1/Z, 3, h=0.7, r=0.3)
+P = transition_matrix(1/Z, 3, h=0.0, r=0.2)
 
 Q = (np.eye(P.shape[0]) - P).transpose()
 rank, null_space = null(Q)
@@ -277,8 +326,8 @@ ax.set_aspect('equal')
 
 #Show the plot
 plt.show()
-"""
 
+"""
 def compute_stationary_distribution(mu, beta, h, r):
     P = transition_matrix(mu, beta, h, r)
     Q = (np.eye(P.shape[0]) - P).transpose()
@@ -288,13 +337,17 @@ def compute_stationary_distribution(mu, beta, h, r):
     return pi
 
 
-def aG(i, r):
+def aG(i):
     (ir, ip) = i
-    ag_i = ir * fitness((ir, ip), "Cooperate", "Rich", r)
-    ag_i += (Zr-ir) * fitness((ir, ip), "Defect", "Rich", r)
-    ag_i += ip * fitness((ir, ip), "Cooperate", "Poor", r)
-    ag_i += (Zp - ip) * fitness((ir, ip), "Defect", "Poor", r)
-    return ag_i/Z
+    ag_i = gr_achievement_over_pop((ir, ip), "Cooperate", "Rich")
+    ag_i += gr_achievement_over_pop((ir, ip), "Defect", "Rich")
+    ag_i += gr_achievement_over_pop((ir, ip), "Cooperate", "Poor")
+    ag_i += gr_achievement_over_pop((ir, ip), "Defect", "Poor")
+    return ag_i/4
+
+
+print(aG((40,160)))
+print(gr_achievement_over_pop((1, 19), "Cooperate", "Rich"))
 
 
 def eta_g(stationary_distribution, r):
@@ -303,22 +356,25 @@ def eta_g(stationary_distribution, r):
         for ip in range(Zp+1):
             i = V((ir, ip))
             eta_g_i += stationary_distribution[i] * aG((ir, ip), r)
-    return eta_g_i/numStates
+    return eta_g_i
 
 
 def compute_group_achivement_in_function_of_r(mu, beta, h):
-    risk = [r/100 for r in range(101)]
+    risk = [r/10 for r in range(11)]
     eta_G = []
     for r in risk:
+        print("\r risk =", r, end=" ", flush=True)
         pi = compute_stationary_distribution(mu, beta, h, r)
         eta_G.append(eta_g(pi, r))
+    print("")
     return risk, eta_G
 
 
-risk, eta_G = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0)
+#risk, eta_G = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0)
 
-plt.figure("Group achievement in function of risk")
-plt.plot(risk, eta_G)
+#plt.figure("Group achievement in function of risk")
+#plt.plot(risk, eta_G)
+#plt.show()
 
 
 end = time.time()
