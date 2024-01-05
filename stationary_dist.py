@@ -82,16 +82,18 @@ def gr_achievement_over_pop(i_config, strategy, w_class):
         return 1
     
     n = []
+    ns = 0
     
     if strategy == "Defect":
         # Defectors
         for jr in range(N-1):
             for jp in range(N-1-jr):
-                for i in range(comb(ir, jr)*comb(ip, jp) * comb(Z-1-ir-ip, N-1-jr-jp)):
-                    n.append(gr_achievement((jr, jp)))
-        if len(n) == 0:
+                    val = comb(ir, jr)*comb(ip, jp) * comb(Z-1-ir-ip, N-1-jr-jp)
+                    n.append(val * gr_achievement((jr, jp)))
+                    ns += val
+        if ns == 0:
             return 0
-        return sum(n)/len(n)
+        return sum(n)/ns
     else:
         if w_class == "Rich":
             # Rich cooperator
@@ -99,22 +101,24 @@ def gr_achievement_over_pop(i_config, strategy, w_class):
                 return 0    # If there is no rich cooperator in the population, their fitness is 0 (unknown)
             for jr in range(N-1):
                 for jp in range(N-1-jr):
-                    for i in range(comb(ir-1, jr)*comb(ip, jp) * comb(Z-ir-ip, N-1-jr-jp)):
-                        n.append(gr_achievement((jr+1, jp)))
-            if len(n) == 0:
+                    val = comb(ir-1, jr)*comb(ip, jp) * comb(Z-ir-ip, N-1-jr-jp)
+                    n.append(val*gr_achievement((jr+1, jp)))
+                    ns += val
+            if ns == 0:
                 return 0
-            return sum(n)/len(n)
+            return sum(n)/ns
         else:
             # Poor cooperator
             if ip == 0:
                 return 0    # If there is no poor cooperator in the population, their fitness is 0 (unknown)
             for jr in range(N-1):
                 for jp in range(N-1-jr):
-                    for i in range(comb(ir, jr)*comb(ip-1, jp) * comb(Z-ir-ip, N-1-jr-jp)):
-                        n.append(gr_achievement((jr, jp+1)))
-            if len(n) == 0:
+                    val = comb(ir, jr)*comb(ip-1, jp) * comb(Z-ir-ip, N-1-jr-jp)
+                    n.append(val*gr_achievement((jr, jp+1)))
+                    ns += val
+            if ns == 0:
                 return 0
-            return sum(n)/len(n)
+            return sum(n)/ns
 
 
 def fitness(i_config, strategy, w_class, r):
@@ -346,8 +350,8 @@ def aG(i):
     return ag_i/4
 
 
-print(aG((40,160)))
-print(gr_achievement_over_pop((1, 19), "Cooperate", "Rich"))
+#print(aG((40,160)))
+#print(gr_achievement_over_pop((1, 19), "Cooperate", "Rich"))
 
 
 def eta_g(stationary_distribution, r):
@@ -355,12 +359,12 @@ def eta_g(stationary_distribution, r):
     for ir in range(Zr+1):
         for ip in range(Zp+1):
             i = V((ir, ip))
-            eta_g_i += stationary_distribution[i] * aG((ir, ip), r)
+            eta_g_i += stationary_distribution[i] * aG((ir, ip))
     return eta_g_i
 
 
 def compute_group_achivement_in_function_of_r(mu, beta, h):
-    risk = [r/10 for r in range(11)]
+    risk = [r/5 for r in range(6)]
     eta_G = []
     for r in risk:
         print("\r risk =", r, end=" ", flush=True)
@@ -370,11 +374,11 @@ def compute_group_achivement_in_function_of_r(mu, beta, h):
     return risk, eta_G
 
 
-#risk, eta_G = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0)
+risk, eta_G = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0)
 
-#plt.figure("Group achievement in function of risk")
-#plt.plot(risk, eta_G)
-#plt.show()
+plt.figure("Group achievement in function of risk")
+plt.plot(risk, eta_G)
+plt.show()
 
 
 end = time.time()
