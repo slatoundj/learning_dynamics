@@ -65,6 +65,8 @@ def plot_grp_achievement_in_function_of_risk(grp_achievement, risk):
     color = ["b", "r", "grey", "g", "purple"]
     plt.figure("Group achievement in function of risk")
     for i in range(len(grp_achievement)):
+        print(risk[i])
+        print(grp_achievement[i])
         plt.plot(risk[i], grp_achievement[i], color=color[i%5])
     plt.xlim(0,1)
     plt.ylim(0,1)

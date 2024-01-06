@@ -57,6 +57,7 @@ def gr_achievement_over_pop(i_config, strategy, w_class, pop_infos, grp_infos, N
         
         
 def aG(i, pop_infos, grp_infos, N):
+    Zr, Zp, Z = pop_infos
     (ir, ip) = i
     ag_i = ir * gr_achievement_over_pop((ir, ip), "Cooperate", "Rich", pop_infos, grp_infos, N)
     ag_i += (Zr - ir) * gr_achievement_over_pop((ir, ip), "Defect", "Rich", pop_infos, grp_infos, N)

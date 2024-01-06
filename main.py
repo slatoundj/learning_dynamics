@@ -1,7 +1,7 @@
 from stationnary_distribution import compute_stationary_distribution
 from gradient_selection import gradient_of_selection
 from group_achievement import eta_g
-from plots import (plot_distribution, plot_distribution_grid)
+from plots import *
 
 
 Zr = 40         # number of richs in the population
@@ -41,7 +41,7 @@ grp_infos = (cr, cp, t)
 
 
 def compute_group_achivement_in_function_of_r(mu, beta, h):
-    risk = [0.18, 0.19, 0.20, 0.21] #[r/100 for r in range(101)]
+    risk = [0.0, 0.5, 1.0] #[r/100 for r in range(101)]
     eta_G = []
     for r in risk:
         print("\r risk =", r, end=" ", flush=True)
@@ -52,6 +52,11 @@ def compute_group_achivement_in_function_of_r(mu, beta, h):
     return risk, eta_G
 
 
-pi = compute_stationary_distribution(mu=1/Z, beta=3, h=1.0, r=0.39, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
-print(pi.sum())
-plot_distribution_grid(pi, pop_infos)
+#pi = compute_stationary_distribution(mu=1/Z, beta=3, h=1.0, r=0.39, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
+#print(pi.sum())
+#plot_distribution_grid(pi, pop_infos)
+
+
+risk, etag = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.5)
+plot_grp_achievement_in_function_of_risk([etag], [risk])
+
