@@ -33,7 +33,7 @@ def rec_V(x, Zr):
     return (ir, ip)   
 
 
-def null(a, rtol=1e-4):
+def null(a, rtol=1e-6):
     A = torch.Tensor(a).to(device)
     U, S, Vh = torch.linalg.svd(A)
     v_cpu = Vh.cpu()

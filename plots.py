@@ -41,7 +41,7 @@ def plot_gradient_selection(gradient, pop_infos):
     plt.show()
     
     
-def plot_gradient_with_distrib(gradient, distribution, pop_infos):
+def plot_gradient_with_distrib(gradient, distribution, p_max, pop_infos):
     Zr, Zp, Z = pop_infos
     nabla_r, nabla_p = gradient
     dx = np.array(nabla_r)
@@ -49,15 +49,15 @@ def plot_gradient_with_distrib(gradient, distribution, pop_infos):
     X, Y = np.meshgrid(np.arange(Zr+1), np.arange(Zp+1))
     
     matrix = distrib_to_matrix(distribution, Zr+1, Zp+1)
-    m = matrix/matrix.max()
+    m = matrix/p_max
     m = 1 - m
 
     plt.figure("Stationary distribution and gradient of selection")
-    plt.quiver(X[::5], Y[::5], dx[::5], dy[::5], pivot='mid', units='inches')
     plt.pcolormesh(m, cmap="grey", shading="gouraud")
+    plt.quiver(X[::5], Y[::5], dx[::5], dy[::5], pivot='mid', units='inches')
     plt.xlim(0,Zr)
     plt.ylim(0,Zp)
-    plt.axis("scaled")
+    #plt.axis("scaled")
     plt.show()
     
     
