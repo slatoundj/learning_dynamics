@@ -66,12 +66,20 @@ def aG(i, pop_infos, grp_infos, N):
     return ag_i/Z
 
 
-def eta_g(stationary_distribution, r, pop_infos, grp_infos, N):
+def eta_g(stationary_distribution, r, pop_infos, grp_infos, N, obstination=False, obstination_info=None):
     Zr, Zp, Z = pop_infos
+    ir_min = 0
+    ip_min = 0
+    if obstination and obstination_info != None:
+        frac, w_class = obstination_info
+        if w_class == "Rich":
+            ir_min = int(frac*Zr)
+        elif w_class == "Poor":
+            ip_min = int(frac*Zp)
     eta_g_i = 0
-    for ir in range(Zr+1):
-        for ip in range(Zp+1):
-            i = V((ir, ip), Zr)
+    for ir in range(ir_min, Zr+1):
+        for ip in range(ip_min, Zp+1):
+            i = V((ir-ir_min, ip-ip_min), Zr-ir_min)
             eta_g_i += stationary_distribution[i] * aG((ir, ip), pop_infos, grp_infos, N)
     return eta_g_i
 

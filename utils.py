@@ -21,7 +21,7 @@ def fermi(beta, fx, fy):
 
 def V(i_config, Zr):
     ir, ip = i_config
-    return ir + ip + ip * Zr
+    return int(ir + ip + ip * Zr)
 
 
 def rec_V(x, Zr):
@@ -30,7 +30,13 @@ def rec_V(x, Zr):
     while ir < 0:
         ip -= 1
         ir = x - ip * Zr - ip
-    return (ir, ip)   
+    return (int(ir), int(ip))   
+
+
+def null_cpu(a, rtol=1e-8):
+    u, s, v = np.linalg.svd(a)
+    rank = (s > rtol*s[0]).sum()
+    return rank, v[rank:].T.copy()
 
 
 def null(a, rtol=1e-6):

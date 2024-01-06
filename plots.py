@@ -41,19 +41,27 @@ def plot_gradient_selection(gradient, pop_infos):
     plt.show()
     
     
-def plot_gradient_with_distrib(gradient, distribution, p_max, pop_infos):
+def plot_gradient_with_distrib(gradient, distribution, p_max, pop_infos, obstination=False, obstination_info=None):
     Zr, Zp, Z = pop_infos
+    ir_min = 0
+    ip_min = 0
+    if obstination and obstination_info != None:
+        frac, w_class = obstination_info
+        if w_class == "Rich":
+            ir_min = int(frac*Zr)
+        elif w_class == "Poor":
+            ip_min = int(frac*Zp)
     nabla_r, nabla_p = gradient
     dx = np.array(nabla_r)
     dy = np.array(nabla_p)
-    X, Y = np.meshgrid(np.arange(Zr+1), np.arange(Zp+1))
+    X, Y = np.meshgrid(np.arange(Zr-ir_min+1) + ir_min, np.arange(Zp-ip_min+1) + ip_min)
     
-    matrix = distrib_to_matrix(distribution, Zr+1, Zp+1)
+    matrix = distrib_to_matrix(distribution, Zr-ir_min+1, Zp-ip_min+1)
     m = matrix/p_max
     m = 1 - m
 
     plt.figure("Stationary distribution and gradient of selection")
-    plt.pcolormesh(m, cmap="grey", shading="gouraud")
+    plt.pcolormesh(X, Y, m, cmap="grey", shading="gouraud")
     plt.quiver(X[::5], Y[::5], dx[::5], dy[::5], pivot='mid', units='inches')
     plt.xlim(0,Zr)
     plt.ylim(0,Zp)
