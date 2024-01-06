@@ -40,60 +40,61 @@ payoffs_infos = (br, bp, cr, cp, t)
 grp_infos = (cr, cp, t)
 
 
-def compute_group_achivement_in_function_of_r(mu, beta, h):
-    risk = [0.0, 0.5, 1.0] #[r/100 for r in range(101)]
+################
+### Figure 1 ###
+################
+def compute_group_achivement_in_function_of_r(mu, beta, h, pop_infos, payoffs_infos, N):
+    risk = [r/100 for r in range(101)]
     eta_G = []
     for r in risk:
         print("\r risk =", r, end=" ", flush=True)
         pi = compute_stationary_distribution(mu, beta, h, r, pop_infos, payoffs_infos, N)
-        print(pi.sum())
         eta_G.append(eta_g(pi, r, pop_infos, grp_infos, N))
     print("")
     return risk, eta_G
 
+rr = []
+e = []
+risk, etag = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
+rr.append(risk)
+e.append(etag)
+risk, etag = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=1.0, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
+rr.append(risk)
+e.append(etag)
+payoffs_infos = (1.0, 1.0, 0.1, 0.1, t)
+risk, etag = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.0, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
+rr.append(risk)
+e.append(etag)
+plot_grp_achievement_in_function_of_risk(e, rr)
 
-#pi = compute_stationary_distribution(mu=1/Z, beta=3, h=1.0, r=0.39, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
-#print(pi.sum())
-#plot_distribution_grid(pi, pop_infos)
-
-
-#risk, etag = compute_group_achivement_in_function_of_r(mu=1/Z, beta=3, h=0.5)
-#plot_grp_achievement_in_function_of_risk([etag], [risk])
-
+"""
 ##################
 ### Figure 2.A ###
 ##################
-"""
 pi = compute_stationary_distribution(mu=1/Z, beta=3, h=0.0, r=0.2, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 grad = gradient_of_selection(mu=1/Z, beta=3, h=0.0, r=0.2, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 grp_achievement = eta_g(pi, r=0.2, pop_infos=pop_infos, grp_infos=grp_infos, N=N)
 print("Group achievement =", grp_achievement)
 plot_gradient_with_distrib(gradient=grad, distribution=pi, p_max = 0.002, pop_infos=pop_infos)
-"""
 
 ##################
 ### Figure 2.B ###
 ##################
-"""
 pi = compute_stationary_distribution(mu=1/Z, beta=3, h=0.7, r=0.2, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 grad = gradient_of_selection(mu=1/Z, beta=3, h=0.7, r=0.2, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 grp_achievement = eta_g(pi, r=0.2, pop_infos=pop_infos, grp_infos=grp_infos, N=N)
 print("Group achievement =", grp_achievement)
 plot_gradient_with_distrib(gradient=grad, distribution=pi, p_max = 0.04, pop_infos=pop_infos)
-"""
 
 ##################
 ### Figure 2.C ###
 ##################
-"""
 pi = compute_stationary_distribution(mu=1/Z, beta=3, h=1.0, r=0.2, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 grad = gradient_of_selection(mu=1/Z, beta=3, h=1.0, r=0.2, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 grp_achievement = eta_g(pi, r=0.2, pop_infos=pop_infos, grp_infos=grp_infos, N=N)
 print("Group achievement =", grp_achievement)
 plot_gradient_with_distrib(gradient=grad, distribution=pi, p_max = 0.075, pop_infos=pop_infos)
-"""
 
-"""
 ##################
 ### Figure 2.D ###
 ##################
@@ -122,7 +123,7 @@ print("Group achievement =", grp_achievement)
 plot_gradient_with_distrib(gradient=grad, distribution=pi, p_max = 0.020, pop_infos=pop_infos)
 """
 
-
+"""
 ##################
 ### Figure 3.A ###
 ##################
@@ -151,3 +152,4 @@ grad = gradient_of_selection(mu=1/Z, beta=5, h=1.0, r=0.2, pop_infos=pop_infos, 
 grp_achievement = eta_g(pi, r=0.2, pop_infos=pop_infos, grp_infos=grp_infos, N=N, obstination=True, obstination_info=obstination_info)
 print("Group achievement =", grp_achievement)
 plot_gradient_with_distrib(gradient=grad, distribution=pi, p_max = 0.002, pop_infos=pop_infos, obstination=True, obstination_info=obstination_info)
+"""

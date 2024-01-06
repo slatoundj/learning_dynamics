@@ -70,12 +70,17 @@ def plot_gradient_with_distrib(gradient, distribution, p_max, pop_infos, obstina
     
     
 def plot_grp_achievement_in_function_of_risk(grp_achievement, risk):
-    color = ["b", "r", "grey", "g", "purple"]
+    color = ["b", "r", "grey"]
     plt.figure("Group achievement in function of risk")
-    for i in range(len(grp_achievement)):
-        print(risk[i])
-        print(grp_achievement[i])
-        plt.plot(risk[i], grp_achievement[i], color=color[i%5])
-    plt.xlim(0,1)
-    plt.ylim(0,1)
+    plt.rc('text', usetex = True)
+    ax = plt.axes()
+    #for i in range(len(grp_achievement)):
+    ax.plot(risk[0], grp_achievement[0], color=color[0], label="with inequality \& h = 0")
+    ax.plot(risk[1], grp_achievement[1], color=color[1], label="with inequality \& h = 1")
+    ax.plot(risk[2], grp_achievement[2], color=color[2], label="without inequality")
+    ax.set_ylabel("group achievement ($\eta_G$)")
+    ax.set_xlabel("risk (r)")
+    ax.set_xlim(0, 1.0)
+    ax.set_ylim(0, 1.0)
+    ax.legend(loc="best")
     plt.show()
