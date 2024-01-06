@@ -38,6 +38,20 @@ r = 0.4         # risk perception
 pop_infos = (Zr, Zp, Z)
 payoffs_infos = (br, bp, cr, cp, t)
 grp_infos = (cr, cp, t)
+
+
+def compute_group_achivement_in_function_of_r(mu, beta, h):
+    risk = [0.18, 0.19, 0.20, 0.21] #[r/100 for r in range(101)]
+    eta_G = []
+    for r in risk:
+        print("\r risk =", r, end=" ", flush=True)
+        pi = compute_stationary_distribution(mu, beta, h, r, pop_infos, payoffs_infos, N)
+        print(pi.sum())
+        eta_G.append(eta_g(pi, r, pop_infos, grp_infos, N))
+    print("")
+    return risk, eta_G
+
+
 pi = compute_stationary_distribution(mu=1/Z, beta=3, h=1.0, r=0.39, pop_infos=pop_infos, payoffs_infos=payoffs_infos, N=N)
 print(pi.sum())
 plot_distribution_grid(pi, pop_infos)

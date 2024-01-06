@@ -1,4 +1,5 @@
 from math import (floor, exp)
+import numpy as np
 import torch
 import os
 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "10.3.0" # For amd gpu with rocm
@@ -39,3 +40,12 @@ def null(a, rtol=1e-4):
     v = v_cpu.numpy()
     rank = (S > rtol*S[0]).sum()
     return rank, v[rank:].T.copy()
+
+
+def distrib_to_matrix(distribution, x_size, y_size):
+    numStates = x_size * y_size
+    matrix = np.zeros((y_size, x_size))
+    for i in range(numStates):
+        ir, ip = rec_V(i, x_size-1)
+        matrix[ip, ir] = distribution[i]
+    return matrix
