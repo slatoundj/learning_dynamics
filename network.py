@@ -4,9 +4,11 @@ import copy
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 from probabilities import payoffs
 from utils import fermi
+from group_achievement import gr_achievement
 
 
 Zr = 40         # number of richs in the population
@@ -56,6 +58,29 @@ def transform_graph_to_dict_of_lists(graph: nx.Graph):
     return graph_dictionary
 
 
+def avg_achievement(network, Z, nodes, br, bp):
+    eta_g = 0
+    for i in range(Z):
+        neighbours = network[i]
+        jr = 0
+        jp = 0
+        if nodes[i]["strategy"] == "Cooperate":
+            if nodes[i]["w_class"] == "Rich":
+                jr += 1
+            else:
+                jp += 1
+        for j in neighbours:
+            if nodes[j]["strategy"] == "Cooperate":
+                if nodes[j]["w_class"] == "Rich":
+                    jr += 1
+                else:
+                    jp += 1
+        t = (0.2*br + 0.8*bp) * c * ((len(neighbours) +1))/2
+        eta_g += gr_achievement((jr, jp), (cr, cp, t))
+    eta_g /= Z
+    return eta_g
+
+
 def estimate_fitness(selected:list, network, nodes:list, r, payoffs_infos):
     """Estimate the fitness of the selected players.
     The estimated fitness is the average expected payoff of the player against its neighbours
@@ -88,7 +113,7 @@ def estimate_fitness(selected:list, network, nodes:list, r, payoffs_infos):
                 else:
                     jp += 1
         t = (0.2*br + 0.8*bp) * c * ((len(neighbours) +1))/2
-        f = payoffs((jr, jp), nodes[i]["strategy"], nodes[i]["w_class"], r, (br, bp, cr, cp, t))
+        f = payoffs((jr, jp), nodes[i]["strategy"], nodes[i]["w_class"], r, (br, bp, cr, cp, t))/br
         fitness.append(f)
     return fitness
 
@@ -142,7 +167,7 @@ def update(network, nodes:list, configuration, Z, beta, mu, h, r, payoffs_infos)
     fitness = estimate_fitness([i for i in range(Z)], network, nodes, r, payoffs_infos)
     selected = random.randint(0,Z-1)#find_best(fitness)
     selected_neighbour = random.choice(network[selected])
-    if random.random() < proba_new_birth((selected, selected_neighbour), fitness, nodes, beta, h):
+    if random.random() < proba_new_birth([selected, selected_neighbour], fitness, nodes, beta, h):
         nodes[selected_neighbour]["strategy"] = nodes[selected]["strategy"]
         if nodes[selected]["strategy"] == "Cooperate":
             if nodes[selected_neighbour]["w_class"] == "Rich":
@@ -172,11 +197,11 @@ def update(network, nodes:list, configuration, Z, beta, mu, h, r, payoffs_infos)
             
 
 # Parameters
-nb_runs = 10                # number of runs: the number of independent realizations of the process
-nb_generations = 10000      # number of generations to run the process
+nb_runs = 5                # number of runs: the number of independent realizations of the process
+nb_generations = 100000      # number of generations to run the process
 k_mean = N-1                # average connectivity
 
-def compute_stationary_distribution(beta, mu, h, r):
+def compute_stationary_distribution(beta, mu, h, r, frac_ir, frac_ip):
     payoffs_infos = br, bp, cr, cp
 
     # Make the network
@@ -187,7 +212,13 @@ def compute_stationary_distribution(beta, mu, h, r):
     all_stationary_distribution = []
     for i in range(nb_runs):
         print("\rrun number", i, end=" ", flush=True)
-        richs = [{"strategy": random.choice(strategies), "w_class": "Rich"} for i in range(Zr)]
+        #[{"strategy": random.choice(strategies), "w_class": "Rich"} for i in range(Zr)]
+        ir = int(frac_ir*Zr)
+        richs_C = [{"strategy": "Cooperate", "w_class": "Rich"} for i in range(ir)]
+        richs_D = [{"strategy": "Defect", "w_class": "Rich"} for i in range(Zr-ir)]
+        richs = richs_C
+        richs.extend(richs_D)
+        """
         ir = 0
         for ind in richs:
             if ind["strategy"] == "Cooperate":
@@ -197,6 +228,12 @@ def compute_stationary_distribution(beta, mu, h, r):
         for ind in poors:
             if ind["strategy"] == "Cooperate":
                 ip += 1
+        """
+        ip = int(frac_ip*Zp)
+        poors_C = [{"strategy": "Cooperate", "w_class": "Poor"} for i in range(ip)]
+        poors_D = [{"strategy": "Defect", "w_class": "Poor"} for i in range(Zp-ip)]
+        poors = poors_C
+        poors.extend(poors_D)
         nodes = richs
         nodes.extend(poors)
         random.shuffle(nodes)
@@ -210,23 +247,35 @@ def compute_stationary_distribution(beta, mu, h, r):
             stationary_distribution[ip, ir] += 1
         stationary_distribution /= nb_generations
         all_stationary_distribution.append(stationary_distribution)
-        #print("final state", (ir, ip), Z-ir-ip)
+        print("final state", (ir, ip), Z-ir-ip)
     print("")
-
     all_stationary_distribution = np.array(all_stationary_distribution)
     mean_stationary_distribution = all_stationary_distribution.mean(0)
+    return mean_stationary_distribution/mean_stationary_distribution.max()
 
-    m = mean_stationary_distribution/mean_stationary_distribution.max()
-    m = 1 - m
-
-    plt.figure("network_fig2")
-    plt.pcolormesh(m, cmap="grey", shading="gouraud")
-    plt.axis('scaled')
-    plt.xlabel("ir")
-    plt.ylabel("ip")
-    plt.xlim(0, Zr)
-    plt.ylim(0, Zp)
-    plt.show()
+p1 = compute_stationary_distribution(beta=3, mu=1/Z, h=0.0, r=0.2, frac_ir=0.1, frac_ip=0.1)
+p2 = compute_stationary_distribution(beta=3, mu=1/Z, h=0.0, r=0.5, frac_ir=0.1, frac_ip=0.1)
+p3 = compute_stationary_distribution(beta=3, mu=1/Z, h=1.0, r=0.2, frac_ir=0.1, frac_ip=0.1)
 
 
-compute_stationary_distribution(beta=3, mu=1/Z, h=0.5, r=0.0)
+fig, axs = plt.subplots(1, 3)
+axs[0].pcolormesh(p1, cmap=mpl.colormaps.get_cmap("binary"), shading="gouraud")
+axs[0].axis("scaled")
+axs[0].set_xlim(0,Zr)
+axs[0].set_ylim(0,Zp)
+axs[0].set_xlabel("ir")
+axs[0].set_ylabel("ip")
+axs[1].pcolormesh(p2, cmap=mpl.colormaps.get_cmap("binary"), shading="gouraud")
+axs[1].axis("scaled")
+axs[1].set_xlim(0,Zr)
+axs[1].set_ylim(0,Zp)
+axs[1].set_xlabel("ir")
+axs[1].set_ylabel("ip")
+m1 = axs[2].pcolormesh(p3, cmap=mpl.colormaps.get_cmap("binary"), shading="gouraud")
+fig.colorbar(m1,ticks=[], label="stationary distribution (p)")
+axs[2].axis("scaled")
+axs[2].set_xlim(0,Zr)
+axs[2].set_ylim(0,Zp)
+axs[2].set_xlabel("ir")
+axs[2].set_ylabel("ip")
+plt.show()
